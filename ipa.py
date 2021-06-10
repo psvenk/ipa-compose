@@ -4,7 +4,6 @@ import re
 from string import ascii_letters
 
 HELP_URL = "https://help.keyman.com/keyboard/sil_ipa/1.8.5/sil_ipa"
-OUTFILE = "ipa.compose"
 
 KEYSYMS = {
     "<": "less",
@@ -28,8 +27,6 @@ KEYSYMS = {
     ".": "period",
 } | {x: x for x in ascii_letters}
 
-# TODO implement substring detection for keystrokes (use . as sentinel)
-
 symbols = []
 
 soup = BeautifulSoup(requests.get(HELP_URL).text, "lxml")
@@ -44,7 +41,7 @@ for row in soup.select("h1 ~ table > tr"):
     if not keystrokes:
         # Symbol unsupported by keyboard
         continue
-    if (re.search(r", \d{4}", ipa_desc) or "IPA" in ipa_desc
+    if (re.search(r", ?[12]\d{3}", ipa_desc) or "IPA" in ipa_desc
             or "use" in ipa_no):
         # Withdrawn, superseded, not IPA usage, etc.
         continue
@@ -56,27 +53,41 @@ for row in soup.select("h1 ~ table > tr"):
         for strokes in match.groups():
             symbols.append({
                 "glyph": glyph,
-                "keystrokes": reversed(strokes),
+                "keystrokes": strokes[::-1],
                 "usv": usv,
                 "symbol_name": symbol_name,
                 "ipa_desc": ipa_desc,
             })
         continue
 
-    if len(keystrokes) > 2:
-        print(keystrokes)
-    # if len(glyph) > 1:
-    #     print(glyph)
-
     symbols.append({
         "glyph": glyph,
-        "keystrokes": reversed(keystrokes),
+        "keystrokes": keystrokes[::-1],
         "usv": usv,
         "symbol_name": symbol_name,
         "ipa_desc": ipa_desc,
     })
 
 for symbol in symbols:
+    # Get keysyms for keystrokes
     strokes = [KEYSYMS[k] for k in symbol["keystrokes"]]
-    print(strokes)
-    # print(symbol)
+
+    # If another sequence of keystrokes begins with this sequence, use "."
+    # (period) to signal the end of this sequence
+    for s in symbols:
+        if (s["keystrokes"] != symbol["keystrokes"]
+                and s["keystrokes"].startswith(symbol["keystrokes"])):
+            assert s["keystrokes"][-1] != "."
+            strokes.append(KEYSYMS["."])
+            break
+
+    # Event string for Compose file
+    event = "<Multi_key> <Multi_key> " + " ".join(f"<{s}>" for s in strokes)
+    # Result string for Compose file
+    result = f'"{chr(int(symbol["usv"], 16))}" U{symbol["usv"]}'
+    # IPA description
+    ipa_desc = symbol["ipa_desc"].capitalize()
+    # Symbol name
+    symbol_name = symbol["symbol_name"]
+
+    print(f"# {ipa_desc} ({symbol_name}) \n{event} : {result}")
