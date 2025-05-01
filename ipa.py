@@ -4,7 +4,7 @@ import re
 from string import ascii_letters
 
 """
-Copyright (c) 2021 psvenk
+Copyright (c) 2021-2025 psvenk
 All rights reserved.
 
 SPDX-License-Identifier: BSD-2-Clause
@@ -31,7 +31,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-HELP_URL = "https://help.keyman.com/keyboard/sil_ipa/1.8.5/sil_ipa"
+HELP_URL = "https://help.keyman.com/keyboard/sil_ipa/1.8.7/sil_ipa"
 
 KEYSYMS = {
     "<": "less",
@@ -58,7 +58,7 @@ KEYSYMS = {
 symbols = []
 
 soup = BeautifulSoup(requests.get(HELP_URL).text, "lxml")
-for row in soup.select("h1 ~ table > tr"):
+for row in soup.select("#diacritics ~ h1 ~ table > tr"):
     data = [re.sub(r"\s+", " ", cell.text.strip())
             for cell in row.select("td")]
     _, glyph, keystrokes, ipa_no, usv, symbol_name, ipa_desc = data

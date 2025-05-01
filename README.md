@@ -24,7 +24,7 @@ Run the script and concatenate the output to your Compose file.
 
 ## License
 
-Copyright (c) 2021 psvenk
+Copyright (c) 2021-2025 psvenk
 
 All rights reserved.
 
